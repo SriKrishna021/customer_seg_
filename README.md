@@ -2,11 +2,10 @@
 
 > End-to-end customer segmentation project using K-Means clustering (Python + scikit-learn) with a fully interactive analytics dashboard. Built for GitHub portfolio showcase.
 
-![Customers](https://img.shields.io/badge/Dataset-1100%2B%20Customers-blue)
-![Clusters](https://img.shields.io/badge/Segments-4%20K--Means%20Clusters-green)
-![Charts](https://img.shields.io/badge/Charts-7%20Interactive-orange)
-![Python](https://img.shields.io/badge/Python-scikit--learn%20%7C%20pandas%20%7C%20matplotlib-yellow)
-![License](https://img.shields.io/badge/License-MIT-purple)
+![Customers](https://github.com/SriKrishna021/customer_seg_/blob/main/deshboard_1.png)
+![Clusters](https://github.com/SriKrishna021/customer_seg_/blob/main/dashboard_2.png)
+![Charts](https://github.com/SriKrishna021/customer_seg_/blob/main/dashboard_2%20(2).png)
+![Python](https://github.com/SriKrishna021/customer_seg_/blob/main/dashboard_3%20(2).png)
 
 ---
 
@@ -185,6 +184,6 @@ MIT — free to use, modify, distribute.
 
 ## 👨‍💻 Author
 
-Customer Segmentation & Analytics Project — B.Tech CSE, 2024–2025 | Design Thinking & Innovation
+Customer Segmentation & Analytics Project — B.Tech CSE, 2024–2028 | Design Thinking & Innovation
 
 ⭐ **Star this repo if it helped you!**
