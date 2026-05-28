@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SegmentIQ — Customer Intelligence Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0f1a;
+  --paper:#f5f0e8;
+  --cream:#ede8dc;
+  --cream2:#e3ddd0;
+  --s1:#1a1f30;
+  --s2:#252c40;
+  --border:#d4cfc3;
+  --seg1:#4f46e5;--seg1l:#ede9fe;
+  --seg2:#059669;--seg2l:#d1fae5;
+  --seg3:#d97706;--seg3l:#fef3c7;
+  --seg4:#dc2626;--seg4l:#fee2e2;
+  --txt:#2d2926;--txt2:#6b6459;--txt3:#a09890;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--txt);min-height:100vh}
+
+/* ── HEADER ── */
+header{
+  background:var(--ink);
+  color:#fff;
+  padding:0 36px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:64px;
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{
+  width:36px;height:36px;border-radius:8px;
+  background:linear-gradient(135deg,var(--seg1),#818cf8);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.logo-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:800;letter-spacing:-0.3px}
+.logo-name span{color:#818cf8}
+.header-right{display:flex;align-items:center;gap:14px}
+.data-badge{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;color:#a5b4fc;
+}
+.btn-export{
+  background:#4f46e5;color:#fff;border:none;
+  padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;
+}
+.btn-export:hover{background:#4338ca;transform:translateY(-1px)}
+label.upload-btn{
+  background:transparent;color:#a5b4fc;border:1px dashed rgba(165,180,252,0.4);
+  padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;
+}
+label.upload-btn:hover{border-color:#818cf8;background:rgba(129,140,248,0.08)}
+#fileIn{display:none}
+
+/* ── HERO STRIP ── */
+.hero{
+  background:var(--ink);
+  color:#fff;
+  padding:32px 36px 40px;
+  border-bottom:3px solid var(--seg1);
+}
+.hero-title{font-family:'Playfair Display',serif;font-size:36px;font-weight:800;line-height:1.1;margin-bottom:8px}
+.hero-title em{color:#818cf8;font-style:normal}
+.hero-sub{font-size:14px;color:#94a3b8;max-width:580px}
+
+/* ── SEGMENT CARDS ── */
+.seg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:28px 36px;border-bottom:1px solid var(--border)}
+.seg-card{
+  background:#fff;border:2px solid var(--border);border-radius:16px;
+  padding:20px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;
+}
+.seg-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:4px;
+}
+.seg-card.s1::before{background:var(--seg1)}
+.seg-card.s2::before{background:var(--seg2)}
+.seg-card.s3::before{background:var(--seg3)}
+.seg-card.s4::before{background:var(--seg4)}
+.seg-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,0.1)}
+.seg-card.active.s1{border-color:var(--seg1);background:var(--seg1l)}
+.seg-card.active.s2{border-color:var(--seg2);background:var(--seg2l)}
+.seg-card.active.s3{border-color:var(--seg3);background:var(--seg3l)}
+.seg-card.active.s4{border-color:var(--seg4);background:var(--seg4l)}
+.seg-emoji{font-size:28px;margin-bottom:10px}
+.seg-name{font-weight:700;font-size:15px;margin-bottom:4px}
+.seg-count{font-size:13px;color:var(--txt2);margin-bottom:12px}
+.seg-bar{height:5px;background:var(--cream2);border-radius:3px;margin-bottom:10px;overflow:hidden}
+.seg-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.16,1,.3,1)}
+.seg-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg-m{background:rgba(255,255,255,0.6);border-radius:8px;padding:7px 10px}
+.seg-m-label{font-size:10px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.seg-m-val{font-size:15px;font-weight:700;margin-top:1px}
+
+/* ── MAIN LAYOUT ── */
+.main{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:24px 36px}
+.main-full{grid-column:1/-1}
+.card{
+  background:#fff;border:1px solid var(--border);border-radius:16px;padding:22px;
+}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.card-title{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
+.card-title .pill{
+  padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;
+  background:var(--cream);color:var(--txt2);
+}
+.chart-wrap{position:relative}
+.tabs{display:flex;gap:4px}
+.tab{
+  padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;
+  border:1px solid var(--border);background:transparent;color:var(--txt2);transition:all .15s;
+  font-family:'DM Sans',sans-serif;
+}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ── FILTER BAR ── */
+.filter-bar{
+  display:flex;gap:10px;flex-wrap:wrap;
+  padding:16px 36px;background:var(--cream);border-bottom:1px solid var(--border);
+}
+.filter-chip{
+  display:flex;align-items:center;gap:6px;
+  background:#fff;border:1px solid var(--border);border-radius:8px;padding:7px 14px;
+  font-size:13px;color:var(--txt2);
+}
+.filter-chip label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--txt3)}
+.filter-chip select{
+  border:none;outline:none;background:transparent;
+  font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt);cursor:pointer;
+}
+.reset-btn{
+  padding:7px 16px;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--txt2);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;
+  transition:all .15s;
+}
+.reset-btn:hover{border-color:var(--seg1);color:var(--seg1)}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{
+  text-align:left;padding:10px 14px;border-bottom:2px solid var(--border);
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--txt2);cursor:pointer;white-space:nowrap;user-select:none
+}
+th:hover{color:var(--seg1)}
+td{padding:9px 14px;border-bottom:1px solid var(--cream);white-space:nowrap}
+tr:hover td{background:var(--cream)}
+.seg-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.sp1{background:var(--seg1l);color:var(--seg1)}
+.sp2{background:var(--seg2l);color:var(--seg2)}
+.sp3{background:var(--seg3l);color:var(--seg3)}
+.sp4{background:var(--seg4l);color:var(--seg4)}
+.star{color:#f59e0b}
+.tbl-search{
+  background:var(--cream);border:1px solid var(--border);border-radius:8px;
+  padding:7px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt);
+  width:220px;outline:none
+}
+.tbl-search::placeholder{color:var(--txt3)}
+.pg-bar{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.pg-info{font-size:12px;color:var(--txt2)}
+.pg-btns{display:flex;gap:5px}
+.pg-btn{
+  width:30px;height:30px;border-radius:6px;border:1px solid var(--border);
+  background:transparent;color:var(--txt2);cursor:pointer;font-size:13px;transition:all .15s
+}
+.pg-btn:hover,.pg-btn.on{background:var(--seg1);color:#fff;border-color:var(--seg1)}
+
+/* ── INSIGHT CARDS ── */
+.insights{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:0 36px 24px}
+.ins-card{
+  background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;
+  display:flex;align-items:flex-start;gap:14px;
+}
+.ins-icon{font-size:26px;flex-shrink:0;margin-top:2px}
+.ins-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--txt3);margin-bottom:4px}
+.ins-val{font-size:20px;font-weight:800;color:var(--txt);line-height:1}
+.ins-sub{font-size:12px;color:var(--txt2);margin-top:3px}
+
+/* ── LOADING ── */
+#loading{
+  position:fixed;inset:0;background:var(--paper);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;
+  transition:opacity .4s
+}
+.spin{
+  width:44px;height:44px;border:3px solid var(--cream2);border-top-color:var(--seg1);
+  border-radius:50%;animation:spin 1s linear infinite;margin-bottom:14px
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-size:14px;color:var(--txt2)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--cream)}
+::-webkit-scrollbar-thumb{background:var(--cream2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--seg1)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){.seg-grid,.main{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.seg-grid,.main{grid-template-columns:1fr}.insights{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spin"></div>
+  <div class="load-txt">Clustering customers…</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">🧠</div>
+    <div class="logo-name">Segment<span>IQ</span></div>
+  </div>
+  <div class="header-right">
+    <div class="data-badge" id="dataBadge">Loading…</div>
+    <label class="upload-btn">📂 Import CSV<input type="file" id="fileIn" accept=".csv" onchange="handleUpload(event)"></label>
+    <button class="btn-export" onclick="exportCSV()">⬇ Export</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-title">Customer <em>Segmentation</em> Intelligence</div>
+  <div class="hero-sub">K-Means clustering on 1,100 customers across 12 behavioral & demographic features. Click any segment to filter all charts and data.</div>
+</div>
+
+<!-- SEGMENT CARDS -->
+<div class="seg-grid" id="segGrid"></div>
+
+<!-- INSIGHT STRIP -->
+<div class="insights" id="insights"></div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-chip"><label>City</label><select id="fCity" onchange="applyFilters()"><option value="all">All Cities</option></select></div>
+  <div class="filter-chip"><label>Gender</label><select id="fGender" onchange="applyFilters()"><option value="all">All</option></select></div>
+  <div class="filter-chip"><label>Occupation</label><select id="fOcc" onchange="applyFilters()"><option value="all">All</option></select></div>
+  <div class="filter-chip"><label>Channel</label><select id="fChannel" onchange="applyFilters()"><option value="all">All</option></select></div>
+  <div class="filter-chip"><label>Segment</label><select id="fSeg" onchange="applyFilters()"><option value="all">All Segments</option></select></div>
+  <button class="reset-btn" onclick="resetAll()">↺ Reset All</button>
+</div>
+
+<!-- CHARTS -->
+<div class="main">
+
+  <!-- Scatter -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🗺 Cluster Map <span class="pill">PCA 2D</span></div>
+      <div class="tabs">
+        <button class="tab on" onclick="setScatterMode('spend',this)">Spend</button>
+        <button class="tab" onclick="setScatterMode('loyalty',this)">Loyalty</button>
+        <button class="tab" onclick="setScatterMode('freq',this)">Frequency</button>
+      </div>
+    </div>
+    <div class="chart-wrap" style="height:300px"><canvas id="scatterChart"></canvas></div>
+  </div>
+
+  <!-- Donut -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🥧 Segment Share <span class="pill">Distribution</span></div>
+    </div>
+    <div class="chart-wrap" style="height:300px"><canvas id="donutChart"></canvas></div>
+  </div>
+
+  <!-- Spend Comparison -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">💳 Spend & Income <span class="pill">By Segment</span></div>
+      <div class="tabs">
+        <button class="tab on" onclick="setSpendMode('spend',this)">Spend</button>
+        <button class="tab" onclick="setSpendMode('income',this)">Income</button>
+        <button class="tab" onclick="setSpendMode('aov',this)">Avg Order</button>
+      </div>
+    </div>
+    <div class="chart-wrap" style="height:260px"><canvas id="spendChart"></canvas></div>
+  </div>
+
+  <!-- Purchase frequency / recency -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📅 Recency vs Frequency <span class="pill">RFM Signal</span></div>
+    </div>
+    <div class="chart-wrap" style="height:260px"><canvas id="rfmChart"></canvas></div>
+  </div>
+
+  <!-- Channel heatmap as bar -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📡 Preferred Channels <span class="pill">By Segment</span></div>
+    </div>
+    <div class="chart-wrap" style="height:260px"><canvas id="channelChart"></canvas></div>
+  </div>
+
+  <!-- Discount vs satisfaction -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🎯 Discount Sensitivity vs Satisfaction</div>
+    </div>
+    <div class="chart-wrap" style="height:260px"><canvas id="discSatChart"></canvas></div>
+  </div>
+
+  <!-- Top categories radar -->
+  <div class="card main-full">
+    <div class="card-header">
+      <div class="card-title">🛍 Purchase Category Preferences <span class="pill">Normalised %</span></div>
+    </div>
+    <div class="chart-wrap" style="height:280px"><canvas id="catChart"></canvas></div>
+  </div>
+
+  <!-- Table -->
+  <div class="card main-full">
+    <div class="card-header">
+      <div class="card-title">📋 Customer Records <span class="pill" id="tblCount"></span></div>
+      <div style="display:flex;gap:8px">
+        <input class="tbl-search" id="tblSearch" placeholder="🔍 Search customers…" oninput="renderTable()">
+        <select style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--txt)" id="tblSort" onchange="renderTable()">
+          <option value="Total Spend (₹)">Sort: Spend</option>
+          <option value="Loyalty Score">Sort: Loyalty</option>
+          <option value="Annual Income (₹)">Sort: Income</option>
+          <option value="Purchase Frequency">Sort: Frequency</option>
+          <option value="Recency (days)">Sort: Recency</option>
+        </select>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('Customer ID')">ID ↕</th>
+          <th onclick="sortBy('Age')">Age ↕</th>
+          <th onclick="sortBy('Gender')">Gender</th>
+          <th onclick="sortBy('City')">City</th>
+          <th onclick="sortBy('Annual Income (₹)')">Income ↕</th>
+          <th onclick="sortBy('Total Spend (₹)')">Total Spend ↕</th>
+          <th onclick="sortBy('Purchase Frequency')">Freq ↕</th>
+          <th onclick="sortBy('Recency (days)')">Recency ↕</th>
+          <th onclick="sortBy('Loyalty Score')">Loyalty ↕</th>
+          <th onclick="sortBy('Satisfaction Score')">Rating ↕</th>
+          <th onclick="sortBy('Preferred Channel')">Channel</th>
+          <th onclick="sortBy('Segment')">Segment ↕</th>
+        </tr></thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+    </div>
+    <div class="pg-bar">
+      <div class="pg-info" id="pgInfo"></div>
+      <div class="pg-btns" id="pgBtns"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA & STATE ──────────────────────────────────────────────────────────
+let allData=[], filteredData=[];
+let activeSeg='all';
+let scatterMode='spend', spendMode='spend';
+let sortCol='Total Spend (₹)', sortDir=-1;
+let page=1; const PG=20;
+let charts={};
+
+const SEG_META={
+  'Premium Loyalists':{ cls:'s1', col:'#4f46e5', light:'#ede9fe', emoji:'💎', desc:'High income, selective buyers' },
+  'Loyal Regulars':   { cls:'s2', col:'#059669', light:'#d1fae5', emoji:'🌟', desc:'Frequent, satisfied customers' },
+  'Budget Seekers':   { cls:'s3', col:'#d97706', light:'#fef3c7', emoji:'🏷', desc:'Discount-driven, price sensitive' },
+  'At-Risk Customers':{ cls:'s4', col:'#dc2626', light:'#fee2e2', emoji:'⚠️', desc:'Low activity, needs re-engagement' }
+};
+const SEG_ORDER=['Premium Loyalists','Loyal Regulars','Budget Seekers','At-Risk Customers'];
+
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.font.size=11;
+Chart.defaults.color='#6b6459';
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+async function init(){
+  try{
+    const r=await fetch('data/customers_segmented.csv');
+    if(!r.ok) throw new Error();
+    parseCSV(await r.text());
+  } catch(e){
+    // fallback: load customers.csv and do JS k-means
+    try{
+      const r2=await fetch('data/customers.csv');
+      const txt=await r2.text();
+      const parsed=Papa.parse(txt,{header:true,skipEmptyLines:true,dynamicTyping:true});
+      allData=parsed.data;
+      // assign segment from Archetype column
+      allData.forEach(r=>{
+        const map={'Premium':'Premium Loyalists','Loyal':'Loyal Regulars','Budget':'Budget Seekers','At-Risk':'At-Risk Customers'};
+        r['Segment']=map[r['Archetype']]||'Budget Seekers';
+        // simple PCA sim
+        r['PCA1']=(r['Annual Income (₹)']/500000)*4-2+(Math.random()*0.5-0.25);
+        r['PCA2']=(r['Total Spend (₹)']/80000)*4-2+(Math.random()*0.5-0.25);
+      });
+      populateFilters(); applyFilters(); hideLoader();
+    } catch(e2){ hideLoader(); }
+  }
+}
+function parseCSV(txt){
+  const p=Papa.parse(txt,{header:true,skipEmptyLines:true,dynamicTyping:true});
+  allData=p.data;
+  populateFilters(); applyFilters(); hideLoader();
+}
+function hideLoader(){
+  const l=document.getElementById('loading');
+  l.style.opacity=0; setTimeout(()=>l.style.display='none',400);
+  document.getElementById('dataBadge').textContent=`${allData.length.toLocaleString()} Customers Loaded`;
+}
+
+// ── FILTERS ──────────────────────────────────────────────────────────────
+function populateFilters(){
+  fillSelect('fCity',[...new Set(allData.map(r=>r['City']))].sort());
+  fillSelect('fGender',[...new Set(allData.map(r=>r['Gender']))].sort());
+  fillSelect('fOcc',[...new Set(allData.map(r=>r['Occupation']))].sort());
+  fillSelect('fChannel',[...new Set(allData.map(r=>r['Preferred Channel']))].sort());
+  fillSelect('fSeg',[...new Set(allData.map(r=>r['Segment']))].sort());
+}
+function fillSelect(id,vals){
+  const s=document.getElementById(id);
+  vals.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); });
+}
+function gv(id){ return document.getElementById(id).value; }
+function applyFilters(){
+  const city=gv('fCity'),gen=gv('fGender'),occ=gv('fOcc'),chan=gv('fChannel'),seg=gv('fSeg');
+  filteredData=allData.filter(r=>{
+    if(activeSeg!=='all' && r['Segment']!==activeSeg) return false;
+    if(city!=='all' && r['City']!==city) return false;
+    if(gen!=='all' && r['Gender']!==gen) return false;
+    if(occ!=='all' && r['Occupation']!==occ) return false;
+    if(chan!=='all' && r['Preferred Channel']!==chan) return false;
+    if(seg!=='all' && r['Segment']!==seg) return false;
+    return true;
+  });
+  page=1;
+  renderAll();
+}
+function resetAll(){
+  activeSeg='all';
+  ['fCity','fGender','fOcc','fChannel','fSeg'].forEach(id=>document.getElementById(id).value='all');
+  applyFilters();
+}
+
+// ── SEGMENT CARDS ─────────────────────────────────────────────────────────
+function renderSegCards(){
+  const grid=document.getElementById('segGrid');
+  const total=filteredData.length||allData.length;
+  const baseCounts={};
+  allData.forEach(r=>{ baseCounts[r['Segment']]=(baseCounts[r['Segment']]||0)+1; });
+  grid.innerHTML=SEG_ORDER.map(seg=>{
+    const m=SEG_META[seg];
+    const count=baseCounts[seg]||0;
+    const pct=(count/allData.length*100).toFixed(1);
+    const sub=allData.filter(r=>r['Segment']===seg);
+    const avgSpend=sub.reduce((s,r)=>s+(+r['Total Spend (₹)']||0),0)/Math.max(1,sub.length);
+    const avgLoy=sub.reduce((s,r)=>s+(+r['Loyalty Score']||0),0)/Math.max(1,sub.length);
+    const active=activeSeg===seg?'active':'';
+    return `<div class="seg-card ${m.cls} ${active}" onclick="toggleSeg('${seg}')">
+      <div class="seg-emoji">${m.emoji}</div>
+      <div class="seg-name">${seg}</div>
+      <div class="seg-count">${count.toLocaleString()} customers · ${pct}%</div>
+      <div class="seg-bar"><div class="seg-bar-fill" style="width:${pct}%;background:${m.col}"></div></div>
+      <div class="seg-metrics">
+        <div class="seg-m"><div class="seg-m-label">Avg Spend</div><div class="seg-m-val" style="color:${m.col}">${fmtINR(avgSpend)}</div></div>
+        <div class="seg-m"><div class="seg-m-label">Loyalty</div><div class="seg-m-val" style="color:${m.col}">${Math.round(avgLoy)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleSeg(seg){
+  activeSeg=activeSeg===seg?'all':seg;
+  applyFilters();
+}
+
+// ── INSIGHTS ──────────────────────────────────────────────────────────────
+function renderInsights(){
+  const d=filteredData;
+  if(!d.length){ document.getElementById('insights').innerHTML=''; return; }
+  const totalSpend=d.reduce((s,r)=>s+(+r['Total Spend (₹)']||0),0);
+  const avgLoy=d.reduce((s,r)=>s+(+r['Loyalty Score']||0),0)/d.length;
+  const avgSat=d.reduce((s,r)=>s+(+r['Satisfaction Score']||0),0)/d.length;
+  const avgRec=d.reduce((s,r)=>s+(+r['Recency (days)']||0),0)/d.length;
+  const topCity=topBy(d,'City');
+  const topCat=topBy(d,'Top Category 1');
+  document.getElementById('insights').innerHTML=`
+    <div class="ins-card"><div class="ins-icon">💰</div><div><div class="ins-title">Total Revenue</div><div class="ins-val">${fmtINRLg(totalSpend)}</div><div class="ins-sub">From ${d.length.toLocaleString()} customers</div></div></div>
+    <div class="ins-card"><div class="ins-icon">🏅</div><div><div class="ins-title">Avg Loyalty</div><div class="ins-val">${Math.round(avgLoy)}<span style="font-size:13px;font-weight:500;color:var(--txt2)">/1000</span></div><div class="ins-sub">Customer retention signal</div></div></div>
+    <div class="ins-card"><div class="ins-icon">⭐</div><div><div class="ins-title">Avg Satisfaction</div><div class="ins-val">${avgSat.toFixed(2)}<span style="font-size:13px;font-weight:500;color:var(--txt2)">/5.0</span></div><div class="ins-sub">CSAT across filtered set</div></div></div>
+    <div class="ins-card"><div class="ins-icon">📍</div><div><div class="ins-title">Top City</div><div class="ins-val" style="font-size:16px">${topCity}</div><div class="ins-sub">Highest customer density</div></div></div>
+  `;
+}
+function topBy(d,col){
+  const m={};
+  d.forEach(r=>{ m[r[col]]=(m[r[col]]||0)+1; });
+  return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────
+function dc(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function buildScatter(){
+  dc('scatter');
+  const ctx=document.getElementById('scatterChart').getContext('2d');
+  const datasets=SEG_ORDER.map(seg=>{
+    const m=SEG_META[seg];
+    const pts=filteredData.filter(r=>r['Segment']===seg).slice(0,300).map(r=>({
+      x:+(r['PCA1']||Math.random()*4-2).toFixed(3),
+      y:+(r['PCA2']||Math.random()*4-2).toFixed(3),
+      r:Math.max(3,Math.min(12,((+r['Total Spend (₹)']||1)/80000)*10))
+    }));
+    return { label:seg, data:pts, backgroundColor:m.col+'88', borderColor:m.col, borderWidth:1, pointRadius:5 };
+  });
+  charts['scatter']=new Chart(ctx,{
+    type:'bubble', data:{datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#6b6459',boxWidth:10,usePointStyle:true}},tooltip:{backgroundColor:'#0b0f1a',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,callbacks:{label:c=>`${c.dataset.label}`}}},
+      scales:{
+        x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890'},title:{display:true,text:'Principal Component 1',color:'#a09890'}},
+        y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890'},title:{display:true,text:'Principal Component 2',color:'#a09890'}}
+      }
+    }
+  });
+}
+
+function buildDonut(){
+  dc('donut');
+  const ctx=document.getElementById('donutChart').getContext('2d');
+  const d=filteredData.length?filteredData:allData;
+  const counts=SEG_ORDER.map(s=>d.filter(r=>r['Segment']===s).length);
+  charts['donut']=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:SEG_ORDER,datasets:[{data:counts,backgroundColor:SEG_ORDER.map(s=>SEG_META[s].col),borderColor:'#fff',borderWidth:4,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#6b6459',boxWidth:10,usePointStyle:true,padding:12}},tooltip:{backgroundColor:'#0b0f1a',callbacks:{label:c=>` ${c.label}: ${c.parsed} (${(c.parsed/d.length*100).toFixed(1)}%)`}}}}
+  });
+}
+
+function buildSpend(){
+  dc('spend');
+  const ctx=document.getElementById('spendChart').getContext('2d');
+  const fieldMap={spend:'Total Spend (₹)',income:'Annual Income (₹)',aov:'Avg Order Value (₹)'};
+  const col=fieldMap[spendMode];
+  const labels=SEG_ORDER.map(s=>s.replace(' ','\n'));
+  const vals=SEG_ORDER.map(s=>{
+    const sub=filteredData.filter(r=>r['Segment']===s);
+    return sub.length?sub.reduce((a,r)=>a+(+r[col]||0),0)/sub.length:0;
+  });
+  charts['spend']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:SEG_ORDER.map(s=>s.split(' ')[0]),datasets:[{data:vals,backgroundColor:SEG_ORDER.map(s=>SEG_META[s].col+'cc'),borderRadius:8,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0b0f1a',callbacks:{label:c=>` ₹${Math.round(c.parsed.y).toLocaleString()}`}}},scales:{x:{grid:{display:false},ticks:{color:'#a09890'}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890',callback:v=>fmtINR(v)}}}}
+  });
+}
+
+function buildRFM(){
+  dc('rfm');
+  const ctx=document.getElementById('rfmChart').getContext('2d');
+  const datasets=SEG_ORDER.map(seg=>{
+    const m=SEG_META[seg];
+    const sub=filteredData.filter(r=>r['Segment']===seg);
+    const pts=sub.map(r=>({x:+(r['Recency (days)']||0),y:+(r['Purchase Frequency']||0)})).slice(0,200);
+    return { label:seg,data:pts,backgroundColor:m.col+'66',borderColor:m.col,borderWidth:1,pointRadius:4 };
+  });
+  charts['rfm']=new Chart(ctx,{
+    type:'scatter',data:{datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#6b6459',boxWidth:10,usePointStyle:true}},tooltip:{backgroundColor:'#0b0f1a',callbacks:{label:c=>` Recency: ${c.parsed.x}d | Freq: ${c.parsed.y}`}}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890'},title:{display:true,text:'Recency (days since last purchase)',color:'#a09890'}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890'},title:{display:true,text:'Purchase Frequency',color:'#a09890'}}}}
+  });
+}
+
+function buildChannel(){
+  dc('channel');
+  const ctx=document.getElementById('channelChart').getContext('2d');
+  const channels=[...new Set(allData.map(r=>r['Preferred Channel']))].sort();
+  const datasets=SEG_ORDER.map(seg=>{
+    const m=SEG_META[seg];
+    const sub=filteredData.filter(r=>r['Segment']===seg);
+    const total=Math.max(1,sub.length);
+    const vals=channels.map(ch=>+(sub.filter(r=>r['Preferred Channel']===ch).length/total*100).toFixed(1));
+    return { label:seg,data:vals,backgroundColor:m.col+'bb',borderRadius:4 };
+  });
+  charts['channel']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:channels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#6b6459',boxWidth:10,usePointStyle:true}},tooltip:{backgroundColor:'#0b0f1a',callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}},scales:{x:{grid:{display:false},ticks:{color:'#a09890'}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890',callback:v=>v+'%'}}}}
+  });
+}
+
+function buildDiscSat(){
+  dc('discSat');
+  const ctx=document.getElementById('discSatChart').getContext('2d');
+  const datasets=SEG_ORDER.map(seg=>{
+    const m=SEG_META[seg];
+    const sub=filteredData.filter(r=>r['Segment']===seg);
+    const pts=sub.map(r=>({x:+(r['Discount Sensitivity']||0),y:+(r['Satisfaction Score']||0)})).slice(0,150);
+    return { label:seg,data:pts,backgroundColor:m.col+'77',borderColor:m.col,borderWidth:1,pointRadius:5 };
+  });
+  charts['discSat']=new Chart(ctx,{
+    type:'scatter',data:{datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#6b6459',boxWidth:10,usePointStyle:true}},tooltip:{backgroundColor:'#0b0f1a',callbacks:{label:c=>` Disc: ${c.parsed.x.toFixed(2)} | Sat: ${c.parsed.y.toFixed(1)}`}}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890'},title:{display:true,text:'Discount Sensitivity (0=None, 1=High)',color:'#a09890'}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890'},title:{display:true,text:'Satisfaction Score',color:'#a09890'},min:1,max:5}}}
+  });
+}
+
+function buildCategory(){
+  dc('cat');
+  const ctx=document.getElementById('catChart').getContext('2d');
+  const cats=[...new Set(allData.map(r=>r['Top Category 1']))].sort();
+  const datasets=SEG_ORDER.map(seg=>{
+    const m=SEG_META[seg];
+    const sub=filteredData.filter(r=>r['Segment']===seg);
+    const total=Math.max(1,sub.length);
+    const vals=cats.map(c=>+(sub.filter(r=>r['Top Category 1']===c).length/total*100).toFixed(1));
+    return { label:seg,data:vals,backgroundColor:m.col+'cc',borderColor:m.col,borderWidth:1,borderRadius:5 };
+  });
+  charts['cat']=new Chart(ctx,{
+    type:'bar',
+    data:{labels:cats,datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#6b6459',boxWidth:10,usePointStyle:true}},tooltip:{backgroundColor:'#0b0f1a'}},scales:{x:{grid:{display:false},ticks:{color:'#a09890'}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#a09890',callback:v=>v+'%'}}}}
+  });
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────────────
+function sortBy(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} renderTable(); }
+function renderTable(){
+  const srch=document.getElementById('tblSearch').value.toLowerCase();
+  let d=filteredData.filter(r=>!srch||Object.values(r).some(v=>String(v).toLowerCase().includes(srch)));
+  d=[...d].sort((a,b)=>{
+    const av=a[sortCol],bv=b[sortCol];
+    if(typeof av==='number') return (av-bv)*sortDir;
+    return String(av).localeCompare(String(bv))*sortDir;
+  });
+  const total=d.length;
+  const pages=Math.ceil(total/PG)||1;
+  if(page>pages) page=1;
+  const sl=d.slice((page-1)*PG,(page-1)*PG+PG);
+  document.getElementById('tblCount').textContent=`${total.toLocaleString()} rows`;
+  document.getElementById('pgInfo').textContent=`${(page-1)*PG+1}–${Math.min(page*PG,total)} of ${total.toLocaleString()}`;
+  const segPill={'Premium Loyalists':'sp1','Loyal Regulars':'sp2','Budget Seekers':'sp3','At-Risk Customers':'sp4'};
+  document.getElementById('tblBody').innerHTML=sl.map(r=>`<tr>
+    <td style="color:var(--seg1);font-weight:600">${r['Customer ID']}</td>
+    <td>${r['Age']}</td>
+    <td>${r['Gender']}</td>
+    <td>${r['City']}</td>
+    <td>₹${(+r['Annual Income (₹)']).toLocaleString()}</td>
+    <td style="font-weight:600">₹${(+r['Total Spend (₹)']).toLocaleString()}</td>
+    <td style="text-align:center">${r['Purchase Frequency']}</td>
+    <td style="text-align:center">${r['Recency (days)']}d</td>
+    <td><div style="background:${SEG_META[r['Segment']]?.light||'#eee'};color:${SEG_META[r['Segment']]?.col||'#333'};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block">${r['Loyalty Score']}</div></td>
+    <td><span class="star">★</span>${r['Satisfaction Score']}</td>
+    <td style="font-size:12px">${r['Preferred Channel']}</td>
+    <td><span class="seg-pill ${segPill[r['Segment']]||''}">${r['Segment']}</span></td>
+  </tr>`).join('');
+  // pagination
+  let pgHtml=`<button class="pg-btn" onclick="goPage(${page-1})" ${page<=1?'disabled':''}>‹</button>`;
+  const s=Math.max(1,page-3), e=Math.min(pages,s+6);
+  for(let p=s;p<=e;p++) pgHtml+=`<button class="pg-btn ${p===page?'on':''}" onclick="goPage(${p})">${p}</button>`;
+  pgHtml+=`<button class="pg-btn" onclick="goPage(${page+1})" ${page>=pages?'disabled':''}>›</button>`;
+  document.getElementById('pgBtns').innerHTML=pgHtml;
+}
+function goPage(p){ const pages=Math.ceil(filteredData.length/PG)||1; if(p<1||p>pages) return; page=p; renderTable(); }
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  const ks=Object.keys(filteredData[0]||allData[0]||{});
+  const rows=[ks.join(','),...filteredData.map(r=>ks.map(k=>JSON.stringify(r[k]??'')).join(','))];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download=`segments_export_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+function handleUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>parseCSV(ev.target.result);
+  reader.readAsText(f);
+}
+function setScatterMode(m,btn){ scatterMode=m; btn.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('on')); btn.classList.add('on'); buildScatter(); }
+function setSpendMode(m,btn){ spendMode=m; btn.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('on')); btn.classList.add('on'); buildSpend(); }
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function fmtINR(v){ if(v>=100000) return '₹'+(v/100000).toFixed(1)+'L'; if(v>=1000) return '₹'+(v/1000).toFixed(0)+'K'; return '₹'+Math.round(v); }
+function fmtINRLg(v){ if(v>=10000000) return '₹'+(v/10000000).toFixed(2)+'Cr'; if(v>=100000) return '₹'+(v/100000).toFixed(1)+'L'; return '₹'+(v/1000).toFixed(0)+'K'; }
+function renderAll(){ renderSegCards(); renderInsights(); buildScatter(); buildDonut(); buildSpend(); buildRFM(); buildChannel(); buildDiscSat(); buildCategory(); renderTable(); }
+
+init();
+</script>
+</body>
+</html>
